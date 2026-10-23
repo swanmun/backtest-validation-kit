@@ -110,6 +110,10 @@ Examples 1–5 on synthetic data, example 6 on real public prices; fixed seeds.
 - Random trades may overlap each other, and every trade is marked at bar closes; intrabar stops are not modelled.
 - The examples show how the tools work, not whether any strategy works. Example 6 is one window and two coins.
 
+## Related
+
+[bot-ops-mcp](https://github.com/swanmun/bot-ops-mcp): a read-only MCP server for my live trading bots, with an evaluation of 10 AI assistants on 38 operator questions.
+
 ## License
 
 MIT. See [LICENSE](LICENSE).

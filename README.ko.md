@@ -110,6 +110,10 @@ reconcile(backtest_trades, bot_trades, time_tol="1h")
 - 무작위 거래끼리는 겹칠 수 있고, 모든 거래를 봉 종가로 평가합니다. 봉 안에서 걸리는 손절은 다루지 않습니다.
 - 예제는 도구가 어떻게 움직이는지 보여 줄 뿐, 어떤 전략이 통하는지는 보여 주지 않습니다. 예제 6도 기간 하나, 코인 두 개입니다.
 
+## 관련 레포
+
+[bot-ops-mcp](https://github.com/swanmun/bot-ops-mcp): 제 실거래 봇을 위한 읽기 전용 MCP 서버. 운영 질문 38문항으로 AI 어시스턴트 10개를 평가했습니다.
+
 ## 라이선스
 
 MIT. [LICENSE](LICENSE) 참고.
