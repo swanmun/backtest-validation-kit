@@ -17,6 +17,7 @@ I ran a rule-based trading bot on live accounts with my own money for three year
 | In a strategy whose average trade loses money after costs, trading less loses less, whatever you remove. A filter can look smart just by cutting trades. | `trade_removal` |
 | If you pick the best of many variants, the winner looks good from luck alone. | `random_entry`, `shuffle`, `overfit` |
 | A bot can trade differently from its backtest without any error. | `reconcile` |
+| A profitable period can rest on a handful of trades, and a positive average can still be luck. | `bootstrap`, `concentration` |
 
 This repository contains only the **methods**, rewritten from scratch: the original research scripts are mixed with live-account data and the live rules, so they stay private. It has no real strategy parameters and no broker data. Examples 1–5 run on synthetic prices, example 6 on real public prices.
 
@@ -26,6 +27,7 @@ I used these methods in a write-up of the three years (section numbers below; th
 
 | Section | What it found | Tool |
 |---|---|---|
+| 7.3 | Phase 1 (216 trades): the bootstrap probability of an average trade at or below zero was 46%, and removing the single best trade turned the net negative. Phase 2 (61 trades): 1.6%, yet removing the top five trades left 4% of the net | `bootstrap`, `concentration` |
 | 9.1 | The older years of the H4 price files were daily bars, for 17 markets. Nothing crashed, so the results alone did not show it | `data_check` |
 | 9.4 | Most of the "improvements" from rules that skip trades came from trading less, not from picking better trades | `trade_removal` |
 | 9.5 | The top-ranked strategy over ten years: random-entry p = 0.067 and deflated Sharpe 0.83, both short of the criteria set in advance; the best of 80 trend variants fell below the median out of sample with probability 0.56 (PBO) | `random_entry`, `shuffle`, `overfit` |
@@ -41,6 +43,8 @@ I used these methods in a write-up of the three years (section numbers below; th
 | `trade_removal` | Is a filter picking better trades, or just fewer? | Compares the filter with removing the same number of trades at random, N times | p, and the improvement split into "from trading less" and "from selection" |
 | `overfit` | After many trials, is the best result still meaningful? | PBO (probability of backtest overfitting, by combinatorially symmetric cross-validation) and the deflated Sharpe ratio (Bailey and López de Prado, 2014) | PBO (0.5 = coin flip), DSR (probability that the true Sharpe is above zero) |
 | `reconcile` | Does the live code make the same trades as the backtest? | Pairs two trade lists by symbol, side, and nearest entry time within a tolerance, then compares entry time, entry price, and stop | Match rate and a table of every mismatch |
+| `bootstrap` | Could the average trade be zero? | Resamples the trades with replacement, N times (default 10,000), and reports the t statistic of the mean | p = share of resamples whose mean is at or below zero |
+| `concentration` | How much of the result rests on a few trades? | Removes the best 1, 3, 5 … trades | Share of the total left, and how many top trades it takes to bring the total to zero |
 
 Helpers: `core` (trade list format, mark-to-market returns, Sharpe ratio) and `synth` (synthetic prices, a deliberately corrupted file, a bad tick). A toy moving-average strategy in `examples/` produces trade lists to test.
 
@@ -55,7 +59,7 @@ One row per trade. `random_entry` and `shuffle` mark every trade to the bar clos
 | `entry_time`, `exit_time` | bar times; the trade enters and exits at those bars' closes |
 | `size` | exposure as a fraction of equity (default 1) |
 | `cost` | total cost of the trade as a fraction of equity (default 0) |
-| `pnl` | used by `trade_removal` |
+| `pnl` | used by `trade_removal`, `bootstrap`, `concentration` |
 | `entry_price`, `stop` | used by `reconcile` |
 
 ## Quick start
@@ -69,18 +73,21 @@ python 03_filter_or_fewer.py
 python 04_pbo.py          # about half a minute
 python 05_reconcile.py
 python 06_real_prices.py  # downloads public BTC and ETH H4 bars once (network), about a minute
+python 07_luck_or_few_trades.py
 cd ..
 python -m pytest tests
 ```
 
 ```python
-from vkit import check_bars, random_entry_test, removal_test, pbo, deflated_sharpe, reconcile
+from vkit import check_bars, random_entry_test, removal_test, pbo, deflated_sharpe, reconcile, bootstrap_mean, top_dependence
 
 check_bars(ohlc, "4h")                               # empty = no problems found
 random_entry_test(trades, ohlc, n=1000)["p"]
 removal_test(trades, keep=mask)["from_selection"]
 pbo(returns_by_variant)["pbo"]                       # periods x variants
 reconcile(backtest_trades, bot_trades, time_tol="1h")
+bootstrap_mean(trades["pnl"])["p"]                  # share of resamples with mean <= 0
+top_dependence(trades["pnl"])["table"]              # what is left without the best trades
 ```
 
 ## What the examples show
@@ -93,6 +100,7 @@ Examples 1–5 on synthetic data, example 6 on real public prices; fixed seeds.
 4. **`04_pbo`**: on 6 markets with no edge, PBO averages 0.52, but single markets range from 0.32 to 0.80.
 5. **`05_reconcile`**: four planted faults (an entry one bar late, a different stop, a missed trade, an extra trade) are all listed.
 6. **`06_real_prices`**: BTC and ETH, H4, 2020-01 to 2026-06, long only, 0.2% per round trip. `data_check` flags one "spike" in each, at 2020-03-12 20:00: the real COVID crash, not a data error. The tool finds candidates; a person decides. The strategy makes money (408 trades) and its deflated Sharpe is 0.99, but holding both coins had a higher Sharpe (0.87 vs 0.72), random entries did as well often enough (p = 0.18), and so did shuffled prices (BTC p = 0.07, ETH p = 0.36). Verdict: indistinguishable from a coin flip.
+7. **`07_luck_or_few_trades`**: on the trending market of example 2, the toy strategy makes +24% over 317 trades, but the bootstrap cannot rule out a zero average (t = 0.71, p = 0.24), and without its three best trades the total turns negative. On the random walk the total is negative (p = 0.88).
 
 ## How to read the results
 

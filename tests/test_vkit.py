@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path[:0] = [str(ROOT), str(ROOT / "examples")]
 
 from toy_strategy import ma_breakout  # noqa: E402
-from vkit import (Book, assert_clean, check_bars, deflated_sharpe, expected_max_sharpe, mtm_returns, pbo,  # noqa: E402
+from vkit import (Book, assert_clean, bootstrap_mean, top_dependence, check_bars, deflated_sharpe, expected_max_sharpe, mtm_returns, pbo,  # noqa: E402
                   random_entry_test, reconcile, removal_test, sharpe, shuffle_bars, shuffle_test, summary)
 from vkit.synth import add_spike, mix_in_daily, random_walk  # noqa: E402
 
@@ -149,3 +149,24 @@ def test_reconcile_statuses():
     s = summary(reconcile(exp, act, time_tol="12h"))
     assert (s["match"], s["differs"], s["missing"], s["extra"]) == (1, 2, 1, 1)
     assert s["match_rate"] == pytest.approx(0.25)
+
+
+# bootstrap and concentration / 부트스트랩과 상위 거래 의존도
+
+def test_bootstrap_bounds_and_t():
+    assert bootstrap_mean([1.0, 2.0, 3.0, 4.0], n=500)["p"] == 0.0  # every resample is positive / 다시 뽑아도 모두 양수
+    r = np.random.default_rng(2).normal(0.0, 1.0, 400)
+    res = bootstrap_mean(r - r.mean(), n=2000, seed=1)  # mean exactly zero / 평균이 정확히 0
+    assert 0.3 < res["p"] < 0.7
+    x = np.array([1.0, -0.5, 2.0, 0.5])
+    assert bootstrap_mean(x, n=10)["t"] == pytest.approx(x.mean() / (x.std(ddof=1) / 2))
+    assert np.array_equal(bootstrap_mean(x, n=50, seed=3)["means"], bootstrap_mean(x, n=50, seed=3)["means"])
+
+
+def test_top_dependence():
+    res = top_dependence([10.0, 5.0, 1.0, -2.0], tops=(1, 2))
+    table = res["table"].set_index("removed")
+    assert table.loc[0, "total_left"] == 14.0
+    assert table.loc[1, "total_left"] == 4.0 and table.loc[1, "share_left"] == pytest.approx(4 / 14)
+    assert res["negative_after"] == 2  # without 10 and 5, 1 - 2 < 0 / 10과 5를 빼면 1 - 2 < 0
+    assert top_dependence([1.0, 1.0])["negative_after"] == 2

@@ -17,6 +17,7 @@
 | 비용까지 치르면 평균 거래가 손실인 전략에서는 무엇을 빼든 적게 거래할수록 덜 잃는다. 거래만 줄여도 필터가 똑똑해 보일 수 있다. | `trade_removal` |
 | 여러 변형 중 1등을 고르면, 운만으로도 1등이 좋아 보인다. | `random_entry`, `shuffle`, `overfit` |
 | 봇은 오류 하나 없이 백테스트와 다르게 매매할 수 있다. | `reconcile` |
+| 이익이 난 기간도 몇 건의 거래에 기대고 있을 수 있고, 평균이 양수여도 운일 수 있다. | `bootstrap`, `concentration` |
 
 이 레포에는 **방법만** 처음부터 다시 써서 담았습니다. 원본 연구 스크립트는 실계좌 자료와 실제 규칙이 섞여 있어 공개하지 않습니다. 실제 전략 값과 브로커 데이터는 없습니다. 예제 1 ~ 5는 합성 가격으로, 예제 6은 실제 공개 시세로 돌아갑니다.
 
@@ -26,6 +27,7 @@
 
 | 절 | 찾은 것 | 도구 |
 |---|---|---|
+| 7.3 | 1기(거래 216건): 부트스트랩으로 평균 거래가 0 이하로 나올 확률이 46%였고, 가장 큰 거래 1건만 빼도 순손익이 음수가 됐다. 2기(61건): 1.6%였지만, 상위 5건을 빼면 순손익의 4%만 남았다 | `bootstrap`, `concentration` |
 | 9.1 | 4시간 단위 가격 파일의 오래된 구간이 일봉이었다(17종목). 아무것도 멈추지 않아 결과만으로는 알 수 없었다 | `data_check` |
 | 9.4 | 거래를 건너뛰는 규칙의 '개선'은 대부분 좋은 거래를 골라서가 아니라 거래를 덜 해서였다 | `trade_removal` |
 | 9.5 | 1순위 전략의 10년 결과: 무작위 진입 대비 p = 0.067, 보정 샤프 0.83으로 미리 정한 기준을 둘 다 넘지 못함. 추세 변형 80개 중 1등이 다른 기간에서 중간 아래로 떨어질 확률 0.56(PBO) | `random_entry`, `shuffle`, `overfit` |
@@ -41,6 +43,8 @@
 | `trade_removal` | 필터가 좋은 거래를 고르는가, 거래를 줄일 뿐인가? | 같은 수의 거래를 무작위로 N번 뺀 결과와 비교 | p, 그리고 개선을 '덜 거래한 몫'과 '고른 몫'으로 나눈 값 |
 | `overfit` | 여러 번 시도한 뒤에도 1등이 의미 있는가? | PBO(조합 대칭 교차 검증으로 잰 백테스트 과적합 확률), 보정 샤프(Bailey · López de Prado, 2014) | PBO(0.5 = 동전), DSR(진짜 샤프가 0보다 클 확률) |
 | `reconcile` | 실거래 코드가 백테스트와 같은 거래를 내는가? | 두 거래 목록을 종목 · 방향 · 허용 오차 안의 가장 가까운 진입 시점으로 짝지은 뒤, 진입 시점 · 진입가 · 손절을 비교 | 일치율과 어긋난 거래 전부의 표 |
+| `bootstrap` | 평균 거래가 0일 수 있나? | 거래를 복원 추출로 N번(기본 1만 번) 다시 뽑고, 평균의 t 통계도 낸다 | p = 다시 뽑은 평균이 0 이하인 비율 |
+| `concentration` | 결과가 몇 건의 거래에 얼마나 기대나? | 가장 좋은 거래 1, 3, 5 …건을 뺀다 | 남은 합계의 비율, 합계를 0으로 만드는 데 필요한 상위 거래 수 |
 
 보조: `core`(거래 목록 형식, 종가 기준 평가 수익, 샤프), `synth`(합성 가격, 일부러 망가뜨린 파일, 잘못된 틱). `examples/`의 장난감 이동평균 전략이 시험할 거래 목록을 만듭니다.
 
@@ -55,7 +59,7 @@
 | `entry_time`, `exit_time` | 봉 시각. 그 봉의 종가에 들어가고 나온다 |
 | `size` | 자본 대비 노출(기본 1) |
 | `cost` | 거래 하나의 비용, 자본 대비(기본 0) |
-| `pnl` | `trade_removal`이 쓴다 |
+| `pnl` | `trade_removal`, `bootstrap`, `concentration`이 쓴다 |
 | `entry_price`, `stop` | `reconcile`이 쓴다 |
 
 ## 빠른 시작
@@ -69,18 +73,21 @@ python 03_filter_or_fewer.py
 python 04_pbo.py          # 30초쯤 걸림
 python 05_reconcile.py
 python 06_real_prices.py  # 공개 BTC · ETH 4시간 봉을 처음 한 번 내려받음(네트워크), 1분쯤 걸림
+python 07_luck_or_few_trades.py
 cd ..
 python -m pytest tests
 ```
 
 ```python
-from vkit import check_bars, random_entry_test, removal_test, pbo, deflated_sharpe, reconcile
+from vkit import check_bars, random_entry_test, removal_test, pbo, deflated_sharpe, reconcile, bootstrap_mean, top_dependence
 
 check_bars(ohlc, "4h")                               # 빈 표 = 문제 없음
 random_entry_test(trades, ohlc, n=1000)["p"]
 removal_test(trades, keep=mask)["from_selection"]
 pbo(returns_by_variant)["pbo"]                       # 기간 × 변형
 reconcile(backtest_trades, bot_trades, time_tol="1h")
+bootstrap_mean(trades["pnl"])["p"]                  # 다시 뽑은 평균이 0 이하인 비율
+top_dependence(trades["pnl"])["table"]              # 가장 좋은 거래들을 빼면 남는 것
 ```
 
 ## 예제가 보여 주는 것
@@ -93,6 +100,7 @@ reconcile(backtest_trades, bot_trades, time_tol="1h")
 4. **`04_pbo`**: 우위가 없는 시장 6개에서 PBO는 평균 0.52지만, 시장 하나씩 보면 0.32부터 0.80까지 흩어집니다.
 5. **`05_reconcile`**: 일부러 심은 문제 네 가지(한 봉 늦은 진입, 다른 손절, 빠진 거래, 더 생긴 거래)를 모두 찾아냅니다.
 6. **`06_real_prices`**: BTC · ETH 4시간 봉, 2020-01 ~ 2026-06, 매수만, 거래 한 번에 0.2%. `data_check`가 두 코인 모두 2020-03-12 20:00에 '튀는 값'을 하나씩 짚습니다. 이것은 데이터 오류가 아니라 실제 코로나 폭락입니다. 도구는 후보를 찾고, 판단은 사람이 합니다. 전략은 돈을 벌었고(거래 408건) 보정 샤프도 0.99지만, 두 코인을 그냥 들고 있는 쪽의 샤프가 더 높았습니다(0.87 대 0.72). 무작위 진입도 충분히 자주 그만큼 했고(p = 0.18), 섞은 가격도 마찬가지였습니다(BTC p = 0.07, ETH p = 0.36). 판정: 동전 던지기와 구분되지 않음.
+7. **`07_luck_or_few_trades`**: 예제 2의 추세 시장에서 장난감 전략은 317건으로 +24%를 내지만, 부트스트랩으로는 평균이 0일 가능성을 배제하지 못하고(t = 0.71, p = 0.24), 가장 좋은 3건을 빼면 합계가 음수가 됩니다. 무작위 행보에서는 합계가 음수입니다(p = 0.88).
 
 ## 결과 읽는 법
 

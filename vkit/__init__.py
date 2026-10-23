@@ -2,6 +2,8 @@
 
 [한국어] 백테스트를 믿기 전에 돌려 볼 점검 도구 모음. 설명은 README.ko.md.
 """
+from .bootstrap import bootstrap_mean
+from .concentration import top_dependence
 from .core import Book, mtm_returns, sharpe
 from .data_check import assert_clean, check_bars
 from .overfit import deflated_sharpe, expected_max_sharpe, pbo, trial_sharpe_variance
@@ -14,6 +16,7 @@ __all__ = [
     "Book", "mtm_returns", "sharpe",
     "check_bars", "assert_clean",
     "random_entry_test", "shuffle_bars", "shuffle_test", "removal_test",
+    "bootstrap_mean", "top_dependence",
     "pbo", "deflated_sharpe", "expected_max_sharpe", "trial_sharpe_variance",
     "reconcile", "summary",
 ]
