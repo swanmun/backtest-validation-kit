@@ -5,6 +5,26 @@ Small tools for two questions every backtest should answer before anyone trusts 
 1. **Is the backtest testing what I think it is testing?** (data, and live code vs. research code)
 2. **Is the result better than chance?** (random entries, shuffled prices, removing trades at random, overfitting)
 
+```mermaid
+flowchart TD
+    T["Trade list and prices"] --> Q1{"1. Is the backtest testing<br/>what I think it is testing?"}
+    Q1 -->|"the data"| DC["data_check<br/>bar spacing, gaps, impossible prices"]
+    Q1 -->|"live code vs research code"| RC["reconcile<br/>same bars, prices and stops?"]
+    DC --> P
+    RC --> P["Write the pass criteria first<br/>e.g. p below 0.05 on every dataset, DSR at least 0.95"]
+    P --> Q2{"2. Is the result<br/>better than chance?"}
+    Q2 -->|"timing"| TIM["random_entry · shuffle"]
+    Q2 -->|"a filter"| FIL["trade_removal"]
+    Q2 -->|"best of many variants"| SEL["overfit: PBO · deflated Sharpe"]
+    Q2 -->|"few trades, luck"| LUCK["bootstrap · concentration"]
+    TIM --> V{"Passes everywhere, including<br/>data not used to choose the rules?"}
+    FIL --> V
+    SEL --> V
+    LUCK --> V
+    V -->|"no"| CF["Still a coin flip"]
+    V -->|"yes"| NR["Coin flip rejected on this data<br/>not proof of an edge"]
+```
+
 [한국어 README](README.ko.md)
 
 ## Why this exists
