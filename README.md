@@ -7,22 +7,22 @@ Small tools for two questions every backtest should answer before anyone trusts 
 
 ```mermaid
 flowchart TD
-    T["Trade list and prices"] --> Q1{"1. Is the backtest testing<br/>what I think it is testing?"}
-    Q1 -->|"the data"| DC["data_check<br/>bar spacing, gaps, impossible prices"]
-    Q1 -->|"live code vs research code"| RC["reconcile<br/>same bars, prices and stops?"]
+    T["trade list<br/>and prices"] --> Q1{"1. Testing what<br/>I think it is?"}
+    Q1 -->|"data"| DC["data_check<br/>bar spacing, gaps<br/>impossible prices"]
+    Q1 -->|"live code"| RC["reconcile<br/>same bars, prices<br/>and stops?"]
     DC --> P
-    RC --> P["Write the pass criteria first<br/>e.g. p below 0.05 on every dataset, DSR at least 0.95"]
-    P --> Q2{"2. Is the result<br/>better than chance?"}
-    Q2 -->|"timing"| TIM["random_entry · shuffle"]
+    RC --> P["pass criteria first<br/>e.g. p below 0.05<br/>DSR at least 0.95"]
+    P --> Q2{"2. Better than<br/>chance?"}
+    Q2 -->|"timing"| TIM["random_entry<br/>shuffle"]
     Q2 -->|"a filter"| FIL["trade_removal"]
-    Q2 -->|"best of many variants"| SEL["overfit: PBO · deflated Sharpe"]
-    Q2 -->|"few trades, luck"| LUCK["bootstrap · concentration"]
-    TIM --> V{"Passes everywhere, including<br/>data not used to choose the rules?"}
+    Q2 -->|"best of many"| SEL["overfit<br/>PBO · deflated Sharpe"]
+    Q2 -->|"few trades, luck"| LUCK["bootstrap<br/>concentration"]
+    TIM --> V{"passes on data<br/>not used<br/>to choose?"}
     FIL --> V
     SEL --> V
     LUCK --> V
-    V -->|"no"| CF["Still a coin flip"]
-    V -->|"yes"| NR["Coin flip rejected on this data<br/>not proof of an edge"]
+    V -->|"no"| CF["still a<br/>coin flip"]
+    V -->|"yes"| NR["coin flip rejected<br/>on this data only<br/>not proof of edge"]
 ```
 
 [한국어 README](README.ko.md)

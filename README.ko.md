@@ -7,22 +7,22 @@
 
 ```mermaid
 flowchart TD
-    T["거래 목록과 가격"] --> Q1{"1. 백테스트가 내가 생각하는 것을<br/>시험하고 있는가?"}
-    Q1 -->|"데이터"| DC["data_check<br/>봉 간격 · 빈 구간 · 있을 수 없는 가격"]
-    Q1 -->|"실거래 코드와 연구 코드"| RC["reconcile<br/>같은 봉 · 진입가 · 손절인가"]
+    T["거래 목록 · 가격"] --> Q1{"1. 생각한 것을<br/>시험하고 있나?"}
+    Q1 -->|"데이터"| DC["data_check<br/>봉 간격 · 빈 구간<br/>이상한 가격"]
+    Q1 -->|"실거래 코드"| RC["reconcile<br/>같은 봉 · 진입가<br/>· 손절인가"]
     DC --> P
-    RC --> P["통과 기준을 먼저 적는다<br/>예: 모든 데이터에서 p 0.05 미만, DSR 0.95 이상"]
-    P --> Q2{"2. 결과가<br/>우연보다 나은가?"}
-    Q2 -->|"타이밍"| TIM["random_entry · shuffle"]
+    RC --> P["통과 기준을<br/>먼저 적는다<br/>예: p 0.05 미만<br/>DSR 0.95 이상"]
+    P --> Q2{"2. 우연보다<br/>나은가?"}
+    Q2 -->|"타이밍"| TIM["random_entry<br/>shuffle"]
     Q2 -->|"필터"| FIL["trade_removal"]
-    Q2 -->|"여러 변형 중 1등"| SEL["overfit: PBO · 보정 샤프"]
-    Q2 -->|"적은 거래 · 운"| LUCK["bootstrap · concentration"]
-    TIM --> V{"규칙을 고를 때 보지 않은 데이터까지<br/>모두 통과하는가?"}
+    Q2 -->|"여러 변형 중 1등"| SEL["overfit<br/>PBO · 보정 샤프"]
+    Q2 -->|"적은 거래 · 운"| LUCK["bootstrap<br/>concentration"]
+    TIM --> V{"고를 때 안 본<br/>데이터까지<br/>통과?"}
     FIL --> V
     SEL --> V
     LUCK --> V
-    V -->|"아니오"| CF["여전히 동전 던지기"]
-    V -->|"예"| NR["이 데이터에서 동전 가정을 기각<br/>우위의 증명은 아님"]
+    V -->|"아니오"| CF["여전히<br/>동전 던지기"]
+    V -->|"예"| NR["동전 가정 기각<br/>이 데이터에서만<br/>우위 증명은 아님"]
 ```
 
 [English README](README.md)
