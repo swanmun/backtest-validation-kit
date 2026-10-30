@@ -11,11 +11,11 @@ flowchart TD
     Q1 -->|"data"| DC["data_check<br/>bar spacing, gaps<br/>impossible prices"]
     Q1 -->|"live code"| RC["reconcile<br/>same bars, prices<br/>and stops?"]
     DC --> P
-    RC --> P["pass criteria first<br/>e.g. p below 0.05<br/>DSR at least 0.95"]
+    RC --> P["pass criteria<br/>written first<br/>e.g. p below 0.05<br/>DSR at least 0.95"]
     P --> Q2{"2. Better than<br/>chance?"}
     Q2 -->|"timing"| TIM["random_entry<br/>shuffle"]
     Q2 -->|"a filter"| FIL["trade_removal"]
-    Q2 -->|"best of many"| SEL["overfit<br/>PBO · deflated Sharpe"]
+    Q2 -->|"best of many"| SEL["overfit<br/>PBO<br/>deflated Sharpe"]
     Q2 -->|"few trades, luck"| LUCK["bootstrap<br/>concentration"]
     TIM --> V{"passes on data<br/>not used<br/>to choose?"}
     FIL --> V
